@@ -6,7 +6,17 @@ export const authRepository = {
             where : {email},
         })
     },
-    async createUser(data: {email: string; passwordHash: string; fullName?: string}){
+    async createUser(data: 
+        {
+            email: string;
+            passwordHash: string; 
+            fullName?: string,
+            avatar?: string,
+            hometown?: string;
+            phoneNumber?: string;
+            dateOfBirth?: Date;
+        }
+    ){
         return await prisma.user.create({
             data,
             select: {
@@ -14,6 +24,10 @@ export const authRepository = {
                 email: true,
                 fullName: true,
                 role: true,
+                avatar: true,
+                hometown: true,
+                phoneNumber: true,
+                dateOfBirth: true,
                 createdAt: true,
             }
         })
@@ -48,4 +62,7 @@ export const authRepository = {
     }
 
 }
+
+
+
 
