@@ -13,13 +13,21 @@ export const authService = {
         const user =  await authRepository.createUser({
             email: input.email,
             passwordHash,
-            fullName: input.fullName
+            fullName: input.fullName,
+            avatar: input.avatar,
+            hometown: input.hometown,
+            phoneNumber: input.phoneNumber,
+            dateOfBirth: input.dateOfBirth ? new Date(input.dateOfBirth) : undefined,
         })
         return {
             id: user.id,
             email: user.email,
             fullName: user.fullName,
-            role: user.role
+            role: user.role,
+            avatar: user.avatar,
+            hometown: user.hometown,
+            phoneNumber: user.phoneNumber,
+            dateOfBirth: user.dateOfBirth,
         }
     },
 

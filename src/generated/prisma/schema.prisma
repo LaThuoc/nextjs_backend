@@ -13,9 +13,15 @@ model User {
   passwordHash  String
   fullName      String?
   role          Role           @default(USER)
-  isBlocked     Boolean        @default(false)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  isBlocked     Boolean        @default(false)
+  avatar        String?
+  hometown      String?
+  phoneNumber   String?
+  dateOfBirth   DateTime?      @db.Date
+  cartItems     CartItem[]
+  orders        Order[]
   refreshTokens RefreshToken[]
 
   @@map("user")
@@ -33,7 +39,160 @@ model RefreshToken {
   @@map("refresh_token")
 }
 
+model Category {
+  id        String     @id @default(uuid())
+  name      String
+  slug      String     @unique
+  parentId  String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  parent    Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryToCategory")
+  products  Product[]
+
+  @@index([parentId])
+  @@map("category")
+}
+
+model Product {
+  id          String         @id @default(uuid())
+  name        String
+  slug        String         @unique
+  deletedAt   DateTime?
+  description String?
+  price       Decimal        @db.Decimal(10, 2)
+  stock       Int            @default(0)
+  isPublished Boolean        @default(true)
+  categoryId  String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  category    Category?      @relation(fields: [categoryId], references: [id])
+  images      ProductImage[]
+
+  @@index([categoryId])
+  @@index([slug])
+  @@map("product")
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  url       String
+  isMain    Boolean  @default(false)
+  position  Int      @default(0)
+  productId String
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_image")
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@map("cart_item")
+}
+
+model OrderItem {
+  id           String  @id @default(uuid())
+  orderId      String
+  productId    String
+  productName  String
+  price        Decimal @db.Decimal(10, 2)
+  quantity     Int
+  productImage String?
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_item")
+}
+
+model Order {
+  id     String @id @default(uuid())
+  code   String @unique // Mã đơn hàng (ví dụ: ORD-123456)
+  userId String
+
+  // --- TÍNH TOÁN TIỀN ---
+  subTotal       Decimal @db.Decimal(12, 2)
+  shippingFee    Decimal @db.Decimal(10, 2)
+  discountAmount Decimal @default(0) @db.Decimal(10, 2)
+  totalAmount    Decimal @db.Decimal(12, 2)
+
+  // --- KHUYẾN MÃI ---
+  couponId String?
+
+  // --- THÔNG TIN THANH TOÁN & TRẠNG THÁI ---
+  status               OrderStatus   @default(PENDING)
+  paymentMethod        PaymentMethod @default(COD)
+  isPaid               Boolean       @default(false)
+  paidAt               DateTime?
+  paymentTransactionId String?
+
+  // --- HỦY ĐƠN HÀNG ---
+  cancelReason String?
+  cancelledBy  String?
+  cancelledAt  DateTime?
+
+  // --- THÔNG TIN GIAO HÀNG (GHN API) ---
+  recipientName  String
+  recipientPhone String
+  provinceId     Int
+  provinceName   String
+  districtId     Int
+  districtName   String
+  wardCode       String
+  wardName       String
+  detailAddress  String
+  weight         Int     @default(500)
+  note           String?
+
+  // --- VẬN CHUYỂN ---
+  shippingProvider     String?   @default("GHN")
+  trackingCode         String?
+  expectedDeliveryDate DateTime?
+
+  // --- TIMESTAMPS & RELATIONS ---
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items OrderItem[]
+
+  @@index([userId])
+  @@index([code])
+  @@index([trackingCode])
+  @@map("orders")
+}
+
 enum Role {
   USER
   ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  COD
+  VNPAY
+  MOMO
 }

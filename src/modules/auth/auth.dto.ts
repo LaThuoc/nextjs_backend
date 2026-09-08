@@ -10,7 +10,16 @@ export const RegisterDTO = z.object ({
     .min(8, "Mật khẩu phải chứa ít nhất 8 ký tự")
     .regex(/[A-Z]/, 'Mật khẩu phải chứa ít nhất 1 chữ cái viết hoa')
     .regex(/[0-9]/, "Mật khẩu phải chứa ít nhất 1 chữ số"),
-    fullName: z.string().trim().optional()
+    fullName: z.string().trim().optional(),
+    avatar: z.string().url("Avatar phải là đường dẫn URL hợp lệ").optional().or(z.literal("")),
+    hometown: z.string().trim().optional(),
+    phoneNumber: z
+        .string()
+        .regex(/(84|0[3|5|7|8|9])+([0-9]{8})\b/, "Số điện thoại không đúng định dạng Việt Nam")
+        .optional()
+        .or(z.literal("")),
+    dateOfBirth: z.coerce.date({ message: "Ngày sinh không hợp lệ" }).optional(),
+
 })
 
 export const LoginDTO = z.object({

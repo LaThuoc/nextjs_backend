@@ -7,10 +7,10 @@ export interface AuthenticatedRequest extends Request {
     user?: JwtPayload
 }
 
-export function withAuth(
-    handler: (req: AuthenticatedRequest) => Promise<NextResponse>
+export function withAuth<T = unknown>(
+    handler: (req: AuthenticatedRequest, context: T) => Promise<NextResponse>
 ){
-    return async (req: Request) => {
+    return async (req: Request, context: T) => {
         const authHeader = req.headers.get("authorization")
         if(!authHeader || !authHeader.startsWith("Bearer")){
             return NextResponse.json(
@@ -18,7 +18,7 @@ export function withAuth(
                 {status: 401}
             )
         }
-        const token = authHeader.split("")[1];
+        const token = authHeader.split(" ")[1];
         const payload = verifyAccessToken(token)
 
         if(!payload){
@@ -39,7 +39,8 @@ export function withAuth(
         }
         const authenticatedReq = req as AuthenticatedRequest;
         authenticatedReq.user = payload
-        return handler(authenticatedReq)
+        return handler(authenticatedReq, context)
 
     }
 }
+
