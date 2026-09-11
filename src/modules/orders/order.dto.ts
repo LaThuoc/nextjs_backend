@@ -16,7 +16,6 @@ export const CreateOrderSchema = z.object({
 
   // Phí vận chuyển & Khuyến mãi
   shippingFee: z.number().min(0, 'Phí vận chuyển không hợp lệ'),
-  discountAmount: z.number().min(0).default(0),
   couponId: z.string().optional(),
 
   // Thanh toán & Ghi chú
@@ -32,7 +31,13 @@ export const UpdateOrderStatusSchema = z.object({
 export const CancelOrderSchema = z.object({
   cancelReason: z.string().min(1, 'Vui lòng nhập lý do hủy đơn hàng'),
 });
+export const OrderQuerySchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(10)
+})
 
 export type CreateOrderDto = z.infer<typeof CreateOrderSchema>;
 export type UpdateOrderStatusDto = z.infer<typeof UpdateOrderStatusSchema>;
 export type CancelOrderDto = z.infer<typeof CancelOrderSchema>;
+export type OrderQueryDto =  z.infer<typeof OrderQuerySchema>
+
