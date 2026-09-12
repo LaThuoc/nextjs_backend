@@ -186,7 +186,7 @@ model Order {
 model Coupon {
   id             String           @id @default(uuid())
   code           String           @unique
-  description    String           
+  description    String?         
   type           CouponType       
   value          Decimal          @db.Decimal(10, 2)
 
