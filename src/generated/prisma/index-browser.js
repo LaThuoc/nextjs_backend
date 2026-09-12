@@ -203,6 +203,7 @@ exports.Prisma.OrderScalarFieldEnum = {
   discountAmount: 'discountAmount',
   totalAmount: 'totalAmount',
   couponId: 'couponId',
+  couponCode: 'couponCode',
   status: 'status',
   paymentMethod: 'paymentMethod',
   isPaid: 'isPaid',
@@ -227,6 +228,32 @@ exports.Prisma.OrderScalarFieldEnum = {
   expectedDeliveryDate: 'expectedDeliveryDate',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CouponScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  description: 'description',
+  type: 'type',
+  value: 'value',
+  minOrderValue: 'minOrderValue',
+  maxDiscountValue: 'maxDiscountValue',
+  usageLimit: 'usageLimit',
+  usedCount: 'usedCount',
+  userUsageLimit: 'userUsageLimit',
+  startDate: 'startDate',
+  endDate: 'endDate',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CouponUsageScalarFieldEnum = {
+  id: 'id',
+  couponId: 'couponId',
+  userId: 'userId',
+  orderId: 'orderId',
+  usedAt: 'usedAt'
 };
 
 exports.Prisma.SortOrder = {
@@ -262,6 +289,12 @@ exports.PaymentMethod = exports.$Enums.PaymentMethod = {
   MOMO: 'MOMO'
 };
 
+exports.CouponType = exports.$Enums.CouponType = {
+  PERCENTAGE: 'PERCENTAGE',
+  FIXED_AMOUNT: 'FIXED_AMOUNT',
+  SHIPPING: 'SHIPPING'
+};
+
 exports.Prisma.ModelName = {
   User: 'User',
   RefreshToken: 'RefreshToken',
@@ -270,7 +303,9 @@ exports.Prisma.ModelName = {
   ProductImage: 'ProductImage',
   CartItem: 'CartItem',
   OrderItem: 'OrderItem',
-  Order: 'Order'
+  Order: 'Order',
+  Coupon: 'Coupon',
+  CouponUsage: 'CouponUsage'
 };
 
 /**
