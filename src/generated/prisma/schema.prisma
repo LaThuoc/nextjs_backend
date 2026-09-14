@@ -140,11 +140,11 @@ model Order {
   couponUsage CouponUsage?
 
   // --- THÔNG TIN THANH TOÁN & TRẠNG THÁI ---
-  status               OrderStatus   @default(PENDING)
-  paymentMethod        PaymentMethod @default(COD)
-  isPaid               Boolean       @default(false)
-  paidAt               DateTime?
-  paymentTransactionId String?
+  status              OrderStatus          @default(PENDING)
+  paymentMethod       PaymentMethod        @default(COD)
+  isPaid              Boolean              @default(false)
+  paidAt              DateTime?
+  paymentTransactions PaymentTransaction[]
 
   // --- HỦY ĐƠN HÀNG ---
   cancelReason String?
@@ -181,6 +181,32 @@ model Order {
   @@index([couponId])
   @@index([trackingCode])
   @@map("orders")
+}
+
+model PaymentTransaction {
+  id       String        @id @default(uuid())
+  orderId  String
+  provider PaymentMethod
+
+  transactionNo String?
+
+  referenceId String @unique
+
+  amount Decimal       @db.Decimal(12, 2)
+  status PaymentStatus @default(PENDING)
+
+  payUrl      String? @db.Text
+  rawResponse String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([transactionNo])
+  @@index([referenceId])
+  @@map("payment_transactions")
 }
 
 model Coupon {
@@ -249,4 +275,12 @@ enum CouponType {
   PERCENTAGE // Giảm theo % (VD: 10%, 20%)
   FIXED_AMOUNT // Giảm theo số tiền cố định (VD: 30.000 VNĐ)
   SHIPPING // Giảm phí vận chuyển (Freeship hoặc giảm bớt phí ship)
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  EXPIRED
+  REFUNDED
 }

@@ -17,6 +17,7 @@ export const CreateOrderSchema = z.object({
   // Phí vận chuyển & Khuyến mãi
   shippingFee: z.number().min(0, 'Phí vận chuyển không hợp lệ'),
   couponId: z.string().optional(),
+  couponCode: z.string().optional(),
 
   // Thanh toán & Ghi chú
   paymentMethod: z.enum(['COD', 'VNPAY', 'MOMO']).default('COD'),
