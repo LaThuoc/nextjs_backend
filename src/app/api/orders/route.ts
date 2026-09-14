@@ -5,10 +5,14 @@ import { withAuth, AuthenticatedRequest } from "@/src/middleware/with-auth";
 import { ZodError } from "zod";
 import { NextResponse } from "next/server";
 import { prisma } from "@/src/lib/db";
-
+import { CouponRepository } from "@/src/modules/coupons/coupon.repository";
+import { CouponService } from "@/src/modules/coupons/coupon.service";
 
 const orderRepository = new OrderRepository(prisma)
-const orderService = new OrderService(orderRepository, prisma)
+const couponRepository = new CouponRepository(prisma);        // 👈 3. Khởi tạo couponRepository
+const couponService = new CouponService(couponRepository, prisma);    // 👈 4. Khởi tạo couponService
+const orderService = new OrderService(orderRepository, prisma, couponService);
+// const orderService = new OrderService(orderRepository, prisma)
 
 export const GET = withAuth( async (req: AuthenticatedRequest) => {
     try{

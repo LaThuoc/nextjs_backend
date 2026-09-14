@@ -15,7 +15,7 @@ export const CreateCouponSchema = z.object({
     endDate: z.coerce.date(),
     isActive: z.boolean().default(true)
 })
-
+export const UpdateCouponSchema = CreateCouponSchema.partial()
 export const ValidateCouponSchema = z.object({
     code: z.string().min(1, 'Vui lòng nhập mã giảm giá').transform((val) => val.toUpperCase()),
     subTotal: z.number().min(0, 'Tổng tiền hàng không hợp lệ'),
@@ -24,3 +24,4 @@ export const ValidateCouponSchema = z.object({
 
 export type CreateCouponDto = z.infer<typeof CreateCouponSchema>
 export type ValidateCouponDto = z.infer<typeof ValidateCouponSchema>
+export type UpdateCouponDto = z.infer<typeof UpdateCouponSchema>

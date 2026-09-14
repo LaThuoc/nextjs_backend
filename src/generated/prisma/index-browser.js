@@ -208,7 +208,6 @@ exports.Prisma.OrderScalarFieldEnum = {
   paymentMethod: 'paymentMethod',
   isPaid: 'isPaid',
   paidAt: 'paidAt',
-  paymentTransactionId: 'paymentTransactionId',
   cancelReason: 'cancelReason',
   cancelledBy: 'cancelledBy',
   cancelledAt: 'cancelledAt',
@@ -226,6 +225,20 @@ exports.Prisma.OrderScalarFieldEnum = {
   shippingProvider: 'shippingProvider',
   trackingCode: 'trackingCode',
   expectedDeliveryDate: 'expectedDeliveryDate',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PaymentTransactionScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  provider: 'provider',
+  transactionNo: 'transactionNo',
+  referenceId: 'referenceId',
+  amount: 'amount',
+  status: 'status',
+  payUrl: 'payUrl',
+  rawResponse: 'rawResponse',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -289,6 +302,14 @@ exports.PaymentMethod = exports.$Enums.PaymentMethod = {
   MOMO: 'MOMO'
 };
 
+exports.PaymentStatus = exports.$Enums.PaymentStatus = {
+  PENDING: 'PENDING',
+  SUCCESS: 'SUCCESS',
+  FAILED: 'FAILED',
+  EXPIRED: 'EXPIRED',
+  REFUNDED: 'REFUNDED'
+};
+
 exports.CouponType = exports.$Enums.CouponType = {
   PERCENTAGE: 'PERCENTAGE',
   FIXED_AMOUNT: 'FIXED_AMOUNT',
@@ -304,6 +325,7 @@ exports.Prisma.ModelName = {
   CartItem: 'CartItem',
   OrderItem: 'OrderItem',
   Order: 'Order',
+  PaymentTransaction: 'PaymentTransaction',
   Coupon: 'Coupon',
   CouponUsage: 'CouponUsage'
 };

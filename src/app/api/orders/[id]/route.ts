@@ -6,9 +6,13 @@ import { ZodError } from 'zod';
 import { prisma } from '@/src/lib/db';
 import { withAuth,AuthenticatedRequest } from '@/src/middleware/with-auth';
 import { Role } from '@/src/generated/prisma';
+import { CouponRepository } from "@/src/modules/coupons/coupon.repository";
+import { CouponService } from "@/src/modules/coupons/coupon.service";
 
-const orderReponsitory = new OrderRepository(prisma)
-const orderService = new OrderService(orderReponsitory, prisma)
+const orderRepository = new OrderRepository(prisma)
+const couponRepository = new CouponRepository(prisma);        // 👈 3. Khởi tạo couponRepository
+const couponService = new CouponService(couponRepository, prisma);    // 👈 4. Khởi tạo couponService
+const orderService = new OrderService(orderRepository, prisma, couponService);
 
 interface RouteParams {
     params: Promise<{id: string}>
@@ -36,8 +40,7 @@ export const GET = withAuth( async(req: AuthenticatedRequest, context: RoutePara
 export const PATCH = withAuth(async (req: AuthenticatedRequest, context: RouteParams) => {
     try{
         const userId = req.user!.userId
-        const rawRole = req.user!.role
-        const userRole: 'USER' | 'ADMIN' = rawRole?.toUpperCase() ? 'ADMIN' : 'USER'
+        const userRole: Role = req.user?.role?.toUpperCase() === 'ADMIN' ? Role.ADMIN : Role.USER;
         const {id} = await context.params
         const body = await req.json()
 

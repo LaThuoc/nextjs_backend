@@ -1,8 +1,14 @@
 import { PrismaClient, Prisma } from "@/src/generated/prisma";
 import { CreateCouponDto } from "./coupon.dto";
-
+import { UpdateCouponDto } from "./coupon.dto";
 export class CouponRepository {
     constructor(private prisma: PrismaClient){}
+    async findById(id: string,  tx?: Prisma.TransactionClient){
+        const db = tx ?? this.prisma
+        return db.coupon.findUnique({
+            where: {id}
+        })
+    }
     async findByCode(code: string, tx?: Prisma.TransactionClient){
         const db = tx ?? this.prisma
         return db.coupon.findUnique({
@@ -32,6 +38,31 @@ export class CouponRepository {
             },
             orderBy: {
                 createdAt: 'desc'
+            }
+        })
+    }
+    async updateCoupon(id: string, dto: UpdateCouponDto,tx?: Prisma.TransactionClient ){
+        const db = tx ?? this.prisma
+        return db.coupon.update({
+            where: {id},
+            data: dto
+        })
+    }
+    async deleteCoupon(id: string, tx?: Prisma.TransactionClient){
+        const db = tx ?? this.prisma
+        const existingCoupon = await this.findById(id, tx)
+        if(!existingCoupon){
+            throw new Error('Mã giảm giá không tồn tại')
+        }
+        return db.coupon.delete({
+            where: {id}
+        })
+    }
+    async deleteManyCoupons(ids: string[], tx?: Prisma.TransactionClient){
+        const db = tx ?? this.prisma
+        return db.coupon.deleteMany({
+            where: {
+                id: {in: ids}
             }
         })
     }

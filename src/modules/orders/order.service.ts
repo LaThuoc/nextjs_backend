@@ -1,11 +1,13 @@
 import { PrismaClient } from "@/src/generated/prisma";
 import { OrderRepository } from "./order.repository";
 import { CreateOrderDto, UpdateOrderStatusDto, CancelOrderDto, OrderQueryDto } from "./order.dto";
+import { CouponService } from "../coupons/coupon.service";
 
 export class OrderService{
     constructor (
         private orderRepository: OrderRepository,
-        private prisma: PrismaClient
+        private prisma: PrismaClient,
+        private couponService: CouponService
     ){}
 
     async createOrder(userId: string, dto: CreateOrderDto){
@@ -69,8 +71,25 @@ export class OrderService{
         
             }
 
-            const shippingFee = dto.shippingFee
-            const discountAmount =  0
+            const shippingFee = dto.shippingFee;
+            let discountAmount = 0;          
+            let appliedCoupon = null;
+
+            const inputCouponCode = dto.couponCode || dto.couponId
+            if(inputCouponCode){
+                const couponResult = await this.couponService.validateAndCalculateDiscount(
+                    userId,
+                    {
+                        code: inputCouponCode,
+                        subTotal,
+                        shippingFee
+                    },
+                    tx
+                )
+                discountAmount = couponResult.discountAmount
+                appliedCoupon = couponResult.coupon
+            }
+            
             const totalAmount = subTotal + shippingFee - discountAmount
 
             if(totalAmount < 0){
@@ -86,7 +105,8 @@ export class OrderService{
                     shippingFee,
                     discountAmount,
                     totalAmount,
-                    couponId: dto.couponId,
+                    couponId: appliedCoupon?.id || null,
+                    couponCode: appliedCoupon?.code || null,
                     paymentMethod: dto.paymentMethod,
                     recipientName: dto.recipientName,
                     recipientPhone: dto.recipientPhone,
@@ -110,6 +130,25 @@ export class OrderService{
                         items: true
                     }
             })
+            
+            if(appliedCoupon){
+                await tx.couponUsage.create({
+                    data: {
+                        couponId: appliedCoupon.id,
+                        userId,
+                        orderId: order.id
+                    }
+                })
+                await tx.coupon.update({
+                    where: {id: appliedCoupon.id},
+                    data: {
+                        usedCount: {
+                            increment: 1
+                        }
+                    }
+                })
+            }
+
             await tx.cartItem.deleteMany({
                 where: {userId}
             })
@@ -157,6 +196,21 @@ export class OrderService{
                         data: {stock: {increment: item.quantity}}
                     })
                 }
+
+            if(order.couponId){
+                await tx.couponUsage.deleteMany({
+                    where: {orderId: order.id},
+
+                })
+                await tx.coupon.update({
+                    where: {id: order.couponId},
+                    data: {
+                        usedCount: {
+                            decrement: 1,
+                        }
+                    }
+                })
+            }
             return {success: true, message: 'Hủy đơn hàng thành công'}
         })
     }
