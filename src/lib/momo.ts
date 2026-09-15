@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-export async function createMoMoPaymentUrl({orderId, amount} : {orderId: string, amount: number}){
+export async function createMoMoPaymentUrl({referenceId, amount, orderInfo} : {referenceId: string, amount: number, orderInfo: string}){
     const partnerCode = process.env.MOMO_PARTNER_CODE!;
     const accessKey = process.env.MOMO_ACCESS_KEY!;
     const secretKey = process.env.MOMO_SECRET_KEY!;
@@ -9,10 +9,11 @@ export async function createMoMoPaymentUrl({orderId, amount} : {orderId: string,
 
     const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/checkout/result`;
     const ipnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/webhook?provider=momo`;
-    const requestId = `${orderId}_${Date.now()}`;
-    const orderInfo = `Thanh toan don hang ${orderId}`;
+    const requestId = referenceId
+    const orderId = referenceId
     const requestType = 'captureWallet';
     const extraData = '';
+    const info = orderInfo || `Thanh toán giao dịch ${referenceId}`
 
     const numericAmount = Math.round(Number(amount));
 
@@ -28,7 +29,7 @@ export async function createMoMoPaymentUrl({orderId, amount} : {orderId: string,
         requestId,
         amount: numericAmount, // Phải là Number!
         orderId,
-        orderInfo,
+        orderInfo : info,
         redirectUrl,
         ipnUrl,
         extraData,
