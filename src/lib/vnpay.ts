@@ -6,10 +6,16 @@ function sortObject(obj: Record<string, unknown>) {
   const keys = Object.keys(obj).sort();
   for (const key of keys) {
     if(obj[key] !== null && obj[key] !== undefined && obj[key] !== '')
-    sorted[key] = encodeURIComponent(String(obj[key])).replace(/%20/g, '+');
+    sorted[key] = String(obj[key])
   }
   return sorted;
 }
+
+function getVNFormattedData(date: Date){
+  const vnDate = new Date(date.getTime() + 7 * 60 * 60 * 1000)
+  return vnDate.toISOString().replace(/[^0-9]/g, '').slice(0, 14);
+}
+
 
 export function buildVNPayUrl({ referenceId, amount, ipAddr,}: { referenceId: string; amount: number; ipAddr: string;}) {
   
@@ -18,8 +24,7 @@ export function buildVNPayUrl({ referenceId, amount, ipAddr,}: { referenceId: st
     const vnpUrl = process.env.VNP_URL!;
     const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/checkout/result`;
 
-    const date = new Date();
-    const createDate = date.toISOString().replace(/[^0-9]/g, '').slice(0, 14);
+    const createDate = getVNFormattedData(new Date())
 
     const numericAmount = Math.round(Number(amount) * 100);
 
@@ -40,10 +45,10 @@ export function buildVNPayUrl({ referenceId, amount, ipAddr,}: { referenceId: st
 
     vnp_Params = sortObject(vnp_Params);
 
-    const signData = querystring.stringify(vnp_Params, { encode: false });
+    const signData = querystring.stringify(vnp_Params, { encode: true });
     const hmac = crypto.createHmac('sha512', secretKey);
     const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
     vnp_Params['vnp_SecureHash'] = signed;
 
-    return `${vnpUrl}?${querystring.stringify(vnp_Params, { encode: false })}`;
+    return `${vnpUrl}?${querystring.stringify(vnp_Params, { encode: true })}`;
 }
