@@ -13,7 +13,7 @@ export async function POST(req: NextRequest){
             }, {status: 400})
         }
 
-        if(!['VNPAY', 'MOMO'].includes(paymentMethod)){
+        if(!['VNPAY', 'MOMO', 'COD'].includes(paymentMethod)){
             return NextResponse.json(
                 {error: 'Phương thức thanh toán không hợp lệ'},
                 {status: 400}
