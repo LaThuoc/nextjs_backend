@@ -4,14 +4,14 @@ import { createMoMoPaymentUrl } from "@/src/lib/momo";
 import { PaymentMethod } from "@/src/generated/prisma";
 
 
-export class PaymentSerivce{
+export class PaymentService{
     static async processCheckout({
         orderId, 
         paymentMethod,
         ipAddr,
     }: {
         orderId: string,
-        paymentMethod: 'VNPAY' | 'MOMO'
+        paymentMethod: 'VNPAY' | 'MOMO' | 'COD'
         ipAddr: string
     }){
         const order = await prisma.order.findUnique({
@@ -21,123 +21,74 @@ export class PaymentSerivce{
             throw new Error('Đơn hàng không tồn tại')
         }
         const numericAmount = Number(order.totalAmount)
-        const referenceId = `VNP_${order.id}_${Date.now()}`
+        const referenceId = `${paymentMethod}_${order.code}_${Date.now()}`
         
+        if(paymentMethod === 'COD'){
+            await prisma.$transaction([
+                prisma.paymentTransaction.create({
+                     data: {
+                    orderId: order.id,
+                    provider: 'COD',
+                    referenceId: referenceId,
+                    amount: order.totalAmount,
+                    status: 'PENDING'
+                }
+                }),
+                prisma.order.update({
+                    where: {
+                        id: order.id
+                    },
+                    data: {
+                        status: 'PROCESSING'
+                    }
+                })
+            ])
+            return `${process.env.NEXT_PUBLIC_APP_URL}/checkout/result?orderId=${order.code}&paymentMethod=COD&success=true`;
+        }
+
         const transaction =  await prisma.paymentTransaction.create({
                 data: {
                     orderId: order.id,
-                    provider: 'VNPAY',
+                    provider: paymentMethod,
                     referenceId,
                     amount: order.totalAmount,
                     status: 'PENDING',
-                    payUrl,
-
                 }
             })
 
-        let url = '';
-        if(paymentMethod === 'COD'){
-            await prisma.order.update({
-                where: {id: orderId},
-                data: {
-                    paymentMethod: 'COD',
-                    status: 'PENDING',
-                    isPaid: false
-                }
-            })
-            return {
-                successs: true,
-                method: 'COD',
-                redirectUrl: `/checkout/result?orderId=${orderId}&status=success`,
-            }
-        }
-        if(method === 'VNPAY'){
-            const referenceId = `VNP_${order.id}_${Date.now()}`
-            const payUrl = buildVNPayUrl({
-                orderId: order.id,
+        let payUrl = '';
+        
+        if(paymentMethod === 'VNPAY'){
+            payUrl = buildVNPayUrl({
+                referenceId: referenceId,
                 amount: numericAmount,
                 ipAddr,
-            })
-
-            await prisma.paymentTransaction.create({
-                data: {
-                    orderId: order.id,
-                    provider: 'VNPAY',
-                    referenceId,
-                    amount: order.totalAmount,
-                    status: 'PENDING',
-                    payUrl,
-
-                }
-            })
-            await prisma.order.update({
-                where: {id: order.id },
-                data: {
-                    paymentMethod: 'VNPAY'
-                }
-            })
-            return {
-                success: true,
-                method: 'VNPAY',
-                redirectUrl: payUrl,
-                qrCodeUrl: `https://img.vietqr.io/image/NCB-9704198526191432198-compact2.png?amount=${numericAmount}&addInfo=${order.code}`,
-        
-            }
-        } 
-        if(method === 'MOMO'){
-            const {payUrl, qrCodeUrl, requestId} = await createMoMoPaymentUrl({
-                orderId: order.id,
+            }) 
+            
+        } else if(paymentMethod === 'MOMO'){
+            const momoRes = await createMoMoPaymentUrl({
+                referenceId: transaction.referenceId,
                 amount: numericAmount,
+                orderInfo: `Thanh toán thành công $${order.code}`
             })
-
-            await prisma.paymentTransaction.create({
-                data:{
-                    orderId: order.id,
-                    provider: 'MOMO',
-                    referenceId: requestId,
-                    amount: order.totalAmount,
-                    status: 'PENDING',
-                    payUrl,
-                }
-            })
-            await prisma.order.update({
-                where: {id: orderId
-                },
-                data: {paymentMethod: 'MOMO'}
-            })
-            return {
-                success: true,
-                method: 'MOMO',
-                redirectUrl: payUrl,
-                qrCodeUrl,
+            if(momoRes.resultCode === 0){
+                payUrl = momoRes.payUrl
+            }else {
+                await prisma.paymentTransaction.update({
+                    where: {id: transaction.id},
+                    data: {
+                        status: 'FAILED',
+                        rawResponse: JSON.stringify(momoRes)
+                    }
+                })
+                throw new Error(momoRes.message || 'Khởi tạo thanh toán MoMo thất bại')
             }
         }
-        throw new Error('Phương thức thanh toán không hợp lệ')
-    }
-    static async markOrderAsPaid(orderId: string, transactionNo: string, provider: 'MOMO' | 'VNPAY', referenceId?: string){
-        const order = await prisma.order.findUnique({
-            where: {id: orderId}
+        await prisma.paymentTransaction.update({
+            where: {id: transaction.id},
+            data: {payUrl}
         })
-        if(!order) return 
-        await prisma.$transaction([
-            prisma.coupon.update({
-                where: {id: orderId},
-                data: {
-                    isPaid: true,
-                    status: 'PROCESSING',
-                    paidAt: new Date(),
-                }
-            }),
-            prisma.paymentTransaction.updateMany({
-                where: {orderId,
-                    provider,
-                    status: 'PENDING'
-                },
-                data: {
-                    status: 'SUCCESS',
-                    transactionNo
-                }
-            })
-        ])
+        return payUrl
     }
+   
 }

@@ -49,10 +49,6 @@ export async function createMoMoPaymentUrl({referenceId, amount, orderInfo} : {r
     if(data.resultCode !== 0){
         throw new Error(`MoMo Error [${data.resultCode}] : ${data.message}`)
     }
-    return {
-        payUrl: data.payUrl,
-        qrCodeUrl: data.qrCodeUrl || data.payUrl,
-        requestId
-    }
+    return data
 
 }
