@@ -52,34 +52,55 @@ export async function POST(req: NextRequest){
                 message:'Transaction already processed'
             }, {status: 200})
         }
+
+        if(transaction.status !== 'PENDING'){
+            return NextResponse.json({
+                success: false,
+                message: 'Order already confirmed',
+
+            }, {status: 200})
+        }
         if(Number(resultCode) === 0){
-            await prisma.$transaction([
-                prisma.paymentTransaction.update({
-                    where: { id: transaction.id},
+            const result =  await prisma.$transaction( async (tx) => {
+                const updateResult = await tx.paymentTransaction.updateMany({
+                    where: { id: transaction.id, status: 'PENDING'},
                     data: {
                         status: 'SUCCESS',
                         transactionNo: String(transId),
                         rawResponse: JSON.stringify(body)
                     }
-                }),
-                prisma.order.update({
+                })
+                if(updateResult.count === 0 ) {
+                    return {success: false, message: 'Order already confirmed'}
+                }
+                await tx.order.update({
                     where: {id: transaction.orderId},
                     data: {
                         isPaid: true,
                         paidAt: new Date(),
-                        status: 'PROCESSING'
+                        status: 'PROCESSING',
+                        paymentMethod: transaction.provider
                     }
                 })
-            ])
+                return {success: true, message: 'Success'}
+            })
+            return NextResponse.json(result, {status: 200})
         } else {
-            await prisma.paymentTransaction.update({
-                where: {id: transaction.id},
+            const upodateResult = await prisma.paymentTransaction.updateMany({
+                where: {id: transaction.id, status: 'PENDING'},
                 data: {
                     status: "FAILED",
-                    trsanctionNo: String(transId),
+                    transacctionNo: String(transId),
                     rawResponse: JSON.stringify(body)
                 }
             })
+            if(upodateResult.count === 0){
+                return NextResponse.json({
+                    success: false,
+                    message: 'Order already confirmed',
+
+                }, {status: 200})
+            }
         }
         return NextResponse.json({
             success: true,
