@@ -1,7 +1,6 @@
 import { prisma } from "@/src/lib/db";
 import { buildVNPayUrl } from "@/src/lib/vnpay";
 import { createMoMoPaymentUrl } from "@/src/lib/momo";
-import { PaymentMethod } from "@/src/generated/prisma";
 
 
 export class PaymentService{
@@ -39,7 +38,8 @@ export class PaymentService{
                         id: order.id
                     },
                     data: {
-                        status: 'PROCESSING'
+                        status: 'PROCESSING',
+                        paymentMethod: 'COD'
                     }
                 })
             ])
